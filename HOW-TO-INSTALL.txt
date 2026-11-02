@@ -1,0 +1,10 @@
+TryAIToday Flow Automator — offline / sideload build (v1.6.4)
+
+If the extension is ever removed from the Chrome Web Store, load this copy manually:
+
+1. Unzip this file.
+2. Open chrome://extensions
+3. Turn on "Developer mode" (top-right).
+4. Click "Load unpacked" and select the extracted "TryAIToday-Flow-Automator" folder.
+
+The extension runs exactly as the Store version. Keep this zip somewhere safe.
