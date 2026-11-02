@@ -8,7 +8,21 @@
 </head>
 <body>
   <!-- Sign-in gate (covers everything until the user is signed in) -->
-  
+  <div id="authGate" class="auth-gate">
+    <div class="auth-card">
+      <div class="brand auth-brand">
+        <span class="brand-title">TryAIToday Flow Automator</span>
+        <span class="brand-sub">Bulk AI Image &amp; Video Gen</span>
+      </div>
+      <h2 class="auth-title">Welcome</h2>
+      <p class="auth-sub">Sign in with Google to start generating.</p>
+      <button id="googleSignIn" class="gbtn">
+        <svg class="gicon" viewBox="0 0 18 18" width="18" height="18" aria-hidden="true"><path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.92c1.7-1.57 2.68-3.88 2.68-6.62z"/><path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.92-2.26c-.81.54-1.84.86-3.04.86-2.34 0-4.32-1.58-5.03-3.7H.96v2.33A9 9 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.97 10.72A5.4 5.4 0 0 1 3.68 9c0-.6.1-1.18.29-1.72V4.95H.96A9 9 0 0 0 0 9c0 1.45.35 2.82.96 4.05l3.01-2.33z"/><path fill="#EA4335" d="M9 3.58c1.32 0 2.5.45 3.44 1.35l2.58-2.59C13.46.89 11.43 0 9 0A9 9 0 0 0 .96 4.95l3.01 2.33C4.68 5.16 6.66 3.58 9 3.58z"/></svg>
+        Continue with Google
+      </button>
+      <div class="auth-err" id="authErr" hidden></div>
+    </div>
+  </div>
 
   <header class="topbar">
     <div class="topbar-row">
@@ -16,7 +30,7 @@
         <span class="brand-title">TryAIToday Flow Automator</span>
         <span class="brand-sub">Bulk AI Image &amp; Video Gen <span class="brand-ver" id="brandVer"></span></span>
       </div>
-      
+      <button id="profileBtn" class="avatar avatar-btn" title="Account" aria-label="Account">?</button>
     </div>
     <nav class="mainNav">
       <div class="modeToggle" role="tablist" aria-label="Generation mode">
@@ -31,7 +45,12 @@
   <main class="content">
 
   <!-- Promo: unlimited access $7 (shows once/day; dismissed until next day; hidden for lifetime users) -->
-  
+  <div id="promoBanner" class="promo" hidden>
+    <span class="promo-spark" aria-hidden="true">✦</span>
+    <span class="promo-text"><b>Unlimited access</b> — <span class="amt">$7</span> one-time.</span>
+    <button id="promoClaim" class="promo-claim" type="button">Claim</button>
+    <button id="promoClose" class="promo-close" type="button" title="Dismiss" aria-label="Dismiss">✕</button>
+  </div>
 
   <!-- GENERATE -->
   <section id="generate" class="panel active">
@@ -326,10 +345,82 @@
   </div>
 
   <!-- Account (full screen) -->
-  
+  <div id="acctOverlay" class="screen" hidden>
+    <div class="screen-head">
+      <span class="screen-title">Account</span>
+      <button class="screen-close" id="acctClose" aria-label="Close">✕</button>
+    </div>
+    <div class="screen-body">
+      <div class="acct-head">
+        <div class="avatar avatar-lg" id="acctAvatar">?</div>
+        <div class="acct-name" id="acctName">—</div>
+        <div class="acct-email-pill" id="acctEmail">—</div>
+      </div>
+      <div class="card">
+        <div class="info-row"><span>Login method</span><span class="info-val">Google</span></div>
+      </div>
+      <div class="card">
+        <div class="info-row sub-row"><span>Subscription</span><span class="plan-badge" id="acctPlanBadge">Trial</span></div>
+        <div class="usage" id="acctUsageWrap">
+          <div class="usage-top"><span>Daily usage</span><span id="acctUsageText">— / —</span></div>
+          <div class="usage-bar"><div class="usage-fill" id="acctUsageFill"></div></div>
+          <div class="usage-hint" id="acctUsageHint"></div>
+        </div>
+        <div class="upgrade-list" id="acctUpgrade">
+          <div class="upgrade-title"><span>Upgrade to Lifetime for</span><span class="upgrade-price">$7 <em>one-time</em></span></div>
+          <div class="upgrade-item"><span class="ui-ic">✦</span><div><b>Unlimited generations</b><span>No quota limits</span></div></div>
+          <div class="upgrade-item"><span class="ui-ic">✦</span><div><b>Priority support</b><span>Faster help when you need it</span></div></div>
+          <div class="upgrade-item"><span class="ui-ic">✦</span><div><b>Regular updates</b><span>All future features included</span></div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="info-row"><span>Last login</span><span class="info-val" id="acctLastLogin">—</span></div>
+      </div>
+      <div class="card">
+        <div class="info-row"><span>Product tour</span><a class="info-val support-btn" id="replayTour" href="#">Replay</a></div>
+        <div class="info-row" style="margin-top:10px"><span>Fix unusual activity</span><a class="info-val support-btn" id="fixUnusualLink" href="#">Open</a></div>
+      </div>
+    </div>
+    <div class="screen-foot">
+      <button class="btn primary" id="manageSubBtn">Manage Subscription</button>
+      <button class="btn danger" id="signOutBtn">Sign Out</button>
+    </div>
+  </div>
 
   <!-- Subscription plans (full screen) -->
-  
+  <div id="plansOverlay" class="screen" hidden>
+    <div class="screen-head">
+      <span class="screen-title">Subscription Plans</span>
+      <button class="screen-close" id="plansClose" aria-label="Close">✕</button>
+    </div>
+    <div class="screen-body">
+      <h2 class="plans-h">Get Lifetime Access</h2>
+      <p class="plans-tagline">One payment. Unlimited bulk generation, forever.</p>
+      <div class="plans-banner" id="plansBanner">— free generations left today</div>
+      <div class="card plan">
+        <div class="plan-top">
+          <div><div class="plan-name">Lifetime</div><div class="plan-desc">One-time payment</div></div>
+          <span class="launch-badge">Launch price</span>
+        </div>
+        <div class="plan-price"><span class="price-amt" id="planPrice">$7</span> <span class="price-unit">one-time</span></div>
+        <ul class="plan-features">
+          <li>Full access to all features</li>
+          <li>Unlimited image &amp; video generation</li>
+          <li>Priority processing</li>
+          <li>Premium support</li>
+          <li>All future updates included</li>
+          <li>No recurring fees ever</li>
+        </ul>
+        <button class="btn primary claim" id="claimBtn">Claim Lifetime Access</button>
+      </div>
+      <div class="trust">
+        <div class="trust-item">✓ Secure checkout</div>
+        <div class="trust-item">✓ SSL encrypted</div>
+        <div class="trust-item">✓ 20-day refund</div>
+        <a class="trust-item link" id="refundLink" href="https://codewithsiddique-04.github.io/TryAiToday-Flow-Automator-LandingPage/refund.html" target="_blank" rel="noopener">Refund policy</a>
+      </div>
+    </div>
+  </div>
 
   <!-- Library picker -->
   <div id="libOverlay" class="lib-overlay" hidden>
@@ -431,6 +522,10 @@
     </div>
   </div>
 
-  <script src="panel-independent.js"></script>
+  <!-- Page-injected (executeScript) helpers — plain script, runs before the module
+       so globalThis.__inj exists. Kept un-obfuscated (see inject.js / build.mjs). -->
+  <script src="inject.js"></script>
+  <script src="wm.js"></script>
+  <script type="module" src="sidepanel.js"></script>
 </body>
 </html>
