@@ -1,22 +1,17 @@
 {
   "manifest_version": 3,
   "name": "TryAIToday Flow Automator",
-  "version": "1.6.4",
-  "description": "Automate bulk image & video generation on Google Flow — queue your prompts to create and auto-download them all in the background.",
+  "version": "1.7.0",
+  "description": "Independent prompt queue for Google Flow using its normal browser interface.",
   "permissions": [
     "sidePanel",
     "storage",
     "downloads",
     "tabs",
-    "scripting",
-    "identity"
+    "scripting"
   ],
   "host_permissions": [
-    "https://labs.google/*",
-    "https://flow.google.com/*",
-    "https://aisandbox-pa.googleapis.com/*",
-    "https://www.googleapis.com/*",
-    "https://us-central1-tryaitoday-automator.cloudfunctions.net/*"
+    "https://flow.google.com/*"
   ],
   "icons": {
     "16": "icons/icon16.png",
@@ -45,25 +40,9 @@
         "https://flow.google.com/*"
       ],
       "js": [
-        "recap-capture.js"
-      ],
-      "run_at": "document_start",
-      "world": "MAIN"
-    },
-    {
-      "matches": [
-        "https://flow.google.com/*"
-      ],
-      "js": [
-        "vendor/wm-detect.js",
-        "wm.js",
-        "flow-inject.js"
-      ],
-      "css": [
-        "flow-inject.css"
+        "flow-ui.js"
       ],
       "run_at": "document_idle"
     }
-  ],
-  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAiSNFNm4oHM5Q+cb4MXB2ivAHStBSUd8un+CpKMBLhCPl0ofhWlprp8DdNQZxT5DNjutsK7C/2mq4pfgrTGQ2D/0EQtf/1zAG/egWjlc0S+vHLmqoLHxbfk/C4PXpGvGTeFjelLDLLlSDOnM6f0t00heArU6y6KUS20Ak5fDSh9W5THQ+kWLKeLPZPvKMaK5m1E1GPILHGQFdYmmtDtYRkmrlDWolkkQpPvq3Mk6sEJGldEcLftRz9lOoj+1sT7IYUIiS3YvH9ds7wpsg9cMqMl1ZspaV7TI7vzsgBfikpQG0Jc8/Is99S2AjFhErnu6ritM1028oR5Mk6RzIaFD2bwIDAQAB"
+  ]
 }
