@@ -15,8 +15,7 @@
     "https://labs.google/*",
     "https://flow.google.com/*",
     "https://aisandbox-pa.googleapis.com/*",
-    "https://www.googleapis.com/*",
-    "https://us-central1-tryaitoday-automator.cloudfunctions.net/*"
+    "https://www.googleapis.com/*"
   ],
   "icons": {
     "16": "icons/icon16.png",
