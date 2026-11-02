@@ -688,3 +688,19 @@ body[data-gen-mode="video"] #imgRefMapRow { display: none; } /* per-prompt image
 .fa-empty { font-size: 13px; font-weight: 600; opacity: .55; }
 .fa-tag { font-size: 11px; opacity: .65; margin-top: 2px; }
 .fa-remove { flex-shrink: 0; padding: 4px 12px; font-size: 12px; }
+
+/* Local UI preference: keep the original Flow Automator interface, but hide
+   purchase/upgrade surfaces. Keep the underlying DOM nodes intact because
+   the original bundled script still queries their IDs. */
+#promoBanner,
+#plansOverlay,
+#acctUpgrade,
+#acctPlanBadge,
+.manage-subscription,
+#manageSubBtn {
+  display: none !important;
+}
+.sub-row {
+  display: none !important;
+}
+
