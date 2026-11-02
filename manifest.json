@@ -5,10 +5,7 @@
   "description": "Independent prompt queue for Google Flow using its normal browser interface.",
   "permissions": [
     "sidePanel",
-    "storage",
-    "downloads",
-    "tabs",
-    "scripting"
+    "tabs"
   ],
   "host_permissions": [
     "https://flow.google.com/*"
@@ -18,9 +15,6 @@
     "32": "icons/icon32.png",
     "48": "icons/icon48.png",
     "128": "icons/icon128.png"
-  },
-  "background": {
-    "service_worker": "background.js"
   },
   "action": {
     "default_title": "TryAIToday Flow Automator",
