@@ -1,0 +1,5 @@
+-- Flow Automator schema is managed in Supabase migration flow_automator_backend_core.
+-- Project ref: lejfarzqdywdaqvbfcaj
+-- Auth: Supabase email/password. Plan assignment is restricted to fa_profiles.role = 'admin'.
+-- To grant the first administrator after signing up, run in SQL editor:
+-- update public.fa_profiles set role='admin' where email='YOUR_VERIFIED_EMAIL';
