@@ -77,9 +77,37 @@
       } catch(error) { setError(error.message); }
     });
   };
+  const getSupabaseUser = async () => { const session = await refreshSession(); return session?.user || null; };
+  const callBackend = async (endpoint, body = {}) => {
+    const session = await refreshSession();
+    if (!session?.access_token) throw new Error("Please sign in again.");
+    const response = await ORIGINAL_FETCH(SUPABASE_URL + "/functions/v1/flow-api/" + encodeURIComponent(endpoint), {
+      method:"POST", headers:{"apikey":SUPABASE_KEY,"Authorization":"Bearer "+session.access_token,"Content-Type":"application/json"}, body:JSON.stringify(body)
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.message || data.error || "Unable to load account status");
+    return data;
+  };
+  try {
+    if (chrome.identity?.launchWebAuthFlow) chrome.identity.launchWebAuthFlow = async (details, callback) => {
+      const user = await getSupabaseUser();
+      if (!user) throw new Error("Sign in with your Supabase email and password first.");
+      const redirect = details?.redirectUrl || chrome.identity.getRedirectURL();
+      const fragment = new URLSearchParams({access_token:"supabase-session-identity",token_type:"Bearer",expires_in:"3600",state:new URL(details.url).searchParams.get("state") || ""});
+      const result = redirect + "#" + fragment.toString();
+      if (callback) { callback(result); return; }
+      return result;
+    };
+  } catch (error) { console.warn("[Flow Automator] OAuth compatibility shim unavailable", error); }
+
   const ORIGINAL_FETCH = window.fetch.bind(window);
   window.fetch = async (input, init = {}) => {
     const rawUrl = typeof input === "string" ? input : input?.url || "";
+    if (rawUrl.includes("www.googleapis.com/oauth2/v3/userinfo") || rawUrl.includes("www.googleapis.com/oauth2/v2/userinfo")) {
+      const user = await getSupabaseUser();
+      if (!user) return new Response(JSON.stringify({error:"unauthorized"}),{status:401,headers:{"Content-Type":"application/json"}});
+      return new Response(JSON.stringify({id:user.id,sub:user.id,email:user.email||"",name:user.user_metadata?.full_name||user.email?.split("@")[0]||"User",picture:user.user_metadata?.avatar_url||""}),{status:200,headers:{"Content-Type":"application/json"}});
+    }
     if (!rawUrl.includes("tryaitoday-automator.cloudfunctions.net")) return ORIGINAL_FETCH(input,init);
     const session = await refreshSession();
     if (!session?.access_token) return new Response(JSON.stringify({error:"unauthorized"}),{status:401,headers:{"Content-Type":"application/json"}});
@@ -98,19 +126,26 @@
   const openSupabaseAccount = async () => {
     const session = await refreshSession();
     if (!session?.access_token) { showGate(); return; }
-    const overlay = $("acctOverlay");
-    if (!overlay) return;
+    const overlay = $("acctOverlay"); if (!overlay) return;
     const email = session.user?.email || "Signed-in user";
     const name = session.user?.user_metadata?.full_name || email.split("@")[0];
     if ($("acctName")) $("acctName").textContent = name;
     if ($("acctEmail")) $("acctEmail").textContent = email;
     if ($("acctAvatar")) $("acctAvatar").textContent = (name.trim()[0] || email[0] || "?").toUpperCase();
-    const loginMethod = overlay.querySelector(".card .info-row .info-val");
-    if (loginMethod) loginMethod.textContent = "Email and password";
-    const lastLogin = $("acctLastLogin");
-    if (lastLogin) lastLogin.textContent = session.user?.last_sign_in_at
-      ? new Date(session.user.last_sign_in_at).toLocaleString() : "Current session";
-    overlay.hidden = false;
+    const loginMethod = overlay.querySelector(".card .info-row .info-val"); if (loginMethod) loginMethod.textContent = "Supabase email and password";
+    const lastLogin = $("acctLastLogin"); if (lastLogin) lastLogin.textContent = session.user?.last_sign_in_at ? new Date(session.user.last_sign_in_at).toLocaleString() : "Current session";
+    const planBadge=$("acctPlanBadge"), usageText=$("acctUsageText"), usageFill=$("acctUsageFill"), usageHint=$("acctUsageHint"), upgrade=$("acctUpgrade");
+    try {
+      const status = await callBackend("getStatus", {});
+      const plan=status.plan||{}, limit=Number(status.limit??status.daily_limit??0), used=Number(status.used??0), reserved=Number(status.reserved??0), remaining=Number(status.remaining??Math.max(0,limit-used-reserved));
+      const pct=limit>0?Math.min(100,Math.round(((used+reserved)/limit)*100)):0;
+      if(planBadge) planBadge.textContent=plan.name||plan.code||"Free";
+      if(usageText) usageText.textContent=limit>=100000?(used+" / Unlimited"):(used+" / "+limit);
+      if(usageFill) usageFill.style.width=pct+"%";
+      if(usageHint) usageHint.textContent=remaining.toLocaleString()+" remaining today"+(reserved?" · "+reserved+" reserved":"");
+      if(upgrade) upgrade.hidden=true;
+    } catch(error) { if(planBadge) planBadge.textContent="Unavailable"; if(usageText) usageText.textContent="Could not load usage"; if(usageHint) usageHint.textContent=error.message||"Please retry."; if(upgrade) upgrade.hidden=true; }
+    overlay.hidden=false;
   };
   document.addEventListener("click", (event) => {
     const profile = event.target?.closest?.("#profileBtn");
