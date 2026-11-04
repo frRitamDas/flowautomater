@@ -123,29 +123,45 @@
 
   // Supabase-native account screen. The legacy account handler assumes Firebase/Google auth;
   // stop it from treating a valid Supabase session as signed out.
-  const openSupabaseAccount = async () => {
-    const session = await refreshSession();
-    if (!session?.access_token) { showGate(); return; }
-    const overlay = $("acctOverlay"); if (!overlay) return;
-    const email = session.user?.email || "Signed-in user";
-    const name = session.user?.user_metadata?.full_name || email.split("@")[0];
-    if ($("acctName")) $("acctName").textContent = name;
-    if ($("acctEmail")) $("acctEmail").textContent = email;
-    if ($("acctAvatar")) $("acctAvatar").textContent = (name.trim()[0] || email[0] || "?").toUpperCase();
-    const loginMethod = overlay.querySelector(".card .info-row .info-val"); if (loginMethod) loginMethod.textContent = "Supabase email and password";
-    const lastLogin = $("acctLastLogin"); if (lastLogin) lastLogin.textContent = session.user?.last_sign_in_at ? new Date(session.user.last_sign_in_at).toLocaleString() : "Current session";
-    const planBadge=$("acctPlanBadge"), usageText=$("acctUsageText"), usageFill=$("acctUsageFill"), usageHint=$("acctUsageHint"), upgrade=$("acctUpgrade");
-    try {
-      const status = await callBackend("getStatus", {});
-      const plan=status.plan||{}, limit=Number(status.limit??status.daily_limit??0), used=Number(status.used??0), reserved=Number(status.reserved??0), remaining=Number(status.remaining??Math.max(0,limit-used-reserved));
-      const pct=limit>0?Math.min(100,Math.round(((used+reserved)/limit)*100)):0;
-      if(planBadge) planBadge.textContent=plan.name||plan.code||"Free";
-      if(usageText) usageText.textContent=limit>=100000?(used+" / Unlimited"):(used+" / "+limit);
-      if(usageFill) usageFill.style.width=pct+"%";
-      if(usageHint) usageHint.textContent=remaining.toLocaleString()+" remaining today"+(reserved?" · "+reserved+" reserved":"");
-      if(upgrade) upgrade.hidden=true;
-    } catch(error) { if(planBadge) planBadge.textContent="Unavailable"; if(usageText) usageText.textContent="Could not load usage"; if(usageHint) usageHint.textContent=error.message||"Please retry."; if(upgrade) upgrade.hidden=true; }
+  let accountStatusCache = null, accountStatusFetchedAt = 0, accountStatusPromise = null;
+  const paintAccountStatus = (status) => {
+    const plan=status?.plan||{}, limit=Number(status?.limit??status?.daily_limit??0), used=Number(status?.used??0), reserved=Number(status?.reserved??0), remaining=Number(status?.remaining??Math.max(0,limit-used-reserved));
+    const pct=limit>0?Math.min(100,Math.round(((used+reserved)/limit)*100)):0;
+    const badge=$("acctPlanBadge"), usage=$("acctUsageText"), fill=$("acctUsageFill"), hint=$("acctUsageHint"), upgrade=$("acctUpgrade");
+    if(badge) badge.textContent=plan.name||plan.code||"Free";
+    if(usage) usage.textContent=(limit>=100000?"Unlimited":limit.toLocaleString())+" daily · "+used.toLocaleString()+" used";
+    if(fill) fill.style.width=pct+"%";
+    if(hint) hint.textContent=(limit>=100000?"Unlimited":remaining.toLocaleString()+" remaining")+" today"+(reserved?" · "+reserved.toLocaleString()+" reserved":"");
+    if(upgrade) upgrade.hidden=true;
+  };
+  const loadAccountStatus = async (force=false) => {
+    if(!force && accountStatusCache && Date.now()-accountStatusFetchedAt<15000) { paintAccountStatus(accountStatusCache); return accountStatusCache; }
+    if(accountStatusPromise) return accountStatusPromise;
+    accountStatusPromise=callBackend("getStatus",{}).then(status=>{accountStatusCache=status;accountStatusFetchedAt=Date.now();paintAccountStatus(status);return status;}).catch(error=>{
+      if($("acctPlanBadge")) $("acctPlanBadge").textContent="Unavailable";
+      if($("acctUsageText")) $("acctUsageText").textContent="Usage unavailable";
+      if($("acctUsageHint")) $("acctUsageHint").textContent=error.message||"Could not load usage";
+      return null;
+    }).finally(()=>{accountStatusPromise=null;});
+    return accountStatusPromise;
+  };
+  const openSupabaseAccount = () => {
+    const overlay=$("acctOverlay"); if(!overlay) return;
     overlay.hidden=false;
+    getSession().then(async stored=>{
+      let session=stored;
+      if(!session?.access_token) session=await refreshSession();
+      if(!session?.access_token){overlay.hidden=true;showGate();return;}
+      const email=session.user?.email||"Signed-in user";
+      const name=session.user?.user_metadata?.full_name||email.split("@")[0];
+      if($("acctName")) $("acctName").textContent=name;
+      if($("acctEmail")) $("acctEmail").textContent=email;
+      if($("acctAvatar")) $("acctAvatar").textContent=(name.trim()[0]||email[0]||"?").toUpperCase();
+      const method=overlay.querySelector(".card .info-row .info-val"); if(method) method.textContent="Supabase email and password";
+      if($("acctLastLogin")) $("acctLastLogin").textContent=session.user?.last_sign_in_at?new Date(session.user.last_sign_in_at).toLocaleString():"Current session";
+      if(accountStatusCache) paintAccountStatus(accountStatusCache);
+      loadAccountStatus(false);
+    }).catch(error=>{if($("acctUsageHint")) $("acctUsageHint").textContent=error.message||"Could not load account";});
   };
   document.addEventListener("click", (event) => {
     const profile = event.target?.closest?.("#profileBtn");
@@ -156,6 +172,11 @@
     }
   }, true);
   document.addEventListener("click", (event) => {
+    if (event.target?.closest?.("#signOutBtn")) {
+      event.preventDefault(); event.stopImmediatePropagation();
+      clearSession().then(()=>{ if ($("acctOverlay")) $("acctOverlay").hidden=true; showGate(); });
+      return;
+    }
     if (event.target?.closest?.("#acctClose")) {
       event.preventDefault();
       event.stopImmediatePropagation();
