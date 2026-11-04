@@ -77,6 +77,7 @@
       } catch(error) { setError(error.message); }
     });
   };
+  window.__faGetAccessToken = async () => { const session = await refreshSession(); return session?.access_token || null; };
   const getSupabaseUser = async () => { const session = await refreshSession(); return session?.user || null; };
   const callBackend = async (endpoint, body = {}) => {
     const session = await refreshSession();
