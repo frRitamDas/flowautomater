@@ -92,6 +92,42 @@
     if (!headers.has("Content-Type")) headers.set("Content-Type","application/json");
     return ORIGINAL_FETCH(target,{...init,method:init.method || "POST",headers});
   };
+
+  // Supabase-native account screen. The legacy account handler assumes Firebase/Google auth;
+  // stop it from treating a valid Supabase session as signed out.
+  const openSupabaseAccount = async () => {
+    const session = await refreshSession();
+    if (!session?.access_token) { showGate(); return; }
+    const overlay = $("acctOverlay");
+    if (!overlay) return;
+    const email = session.user?.email || "Signed-in user";
+    const name = session.user?.user_metadata?.full_name || email.split("@")[0];
+    if ($("acctName")) $("acctName").textContent = name;
+    if ($("acctEmail")) $("acctEmail").textContent = email;
+    if ($("acctAvatar")) $("acctAvatar").textContent = (name.trim()[0] || email[0] || "?").toUpperCase();
+    const loginMethod = overlay.querySelector(".card .info-row .info-val");
+    if (loginMethod) loginMethod.textContent = "Email and password";
+    const lastLogin = $("acctLastLogin");
+    if (lastLogin) lastLogin.textContent = session.user?.last_sign_in_at
+      ? new Date(session.user.last_sign_in_at).toLocaleString() : "Current session";
+    overlay.hidden = false;
+  };
+  document.addEventListener("click", (event) => {
+    const profile = event.target?.closest?.("#profileBtn");
+    if (profile) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      openSupabaseAccount().catch(error => setError(error.message));
+    }
+  }, true);
+  document.addEventListener("click", (event) => {
+    if (event.target?.closest?.("#acctClose")) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      if ($("acctOverlay")) $("acctOverlay").hidden = true;
+    }
+  }, true);
+
   document.addEventListener("DOMContentLoaded", async () => {
     buildAuthForm();
     const session=await refreshSession();
