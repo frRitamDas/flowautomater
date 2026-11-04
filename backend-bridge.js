@@ -17,21 +17,51 @@
       body:JSON.stringify(body)
     });
     const data = await response.json().catch(() => ({}));
-    if (!response.ok) throw new Error(data.msg || data.message || data.error_description || data.error || "Authentication failed");
+    if (!response.ok) {
+      const error = new Error(data.msg || data.message || data.error_description || data.error || "Authentication failed");
+      error.status = response.status;
+      error.code = data.code || data.error || data.error_code || "";
+      throw error;
+    }
     return data;
   };
   const showApp = () => { if ($("authGate")) $("authGate").hidden = true; };
   const showGate = () => { if ($("authGate")) $("authGate").hidden = false; };
+  // Supabase rotates refresh tokens. All callers must share one refresh request;
+  // otherwise simultaneous refreshes can invalidate each other's refresh token.
+  let refreshPromise = null;
   const refreshSession = async () => {
-    const session = await getSession();
-    if (!session?.refresh_token) return null;
-    if (session.expires_at && session.expires_at * 1000 > Date.now() + 60000) return session;
+    if (refreshPromise) return refreshPromise;
+    refreshPromise = (async () => {
+      const session = await getSession();
+      if (!session?.refresh_token) return null;
+      if (session.expires_at && session.expires_at * 1000 > Date.now() + 60000) return session;
+      try {
+        const next = await authRequest("token?grant_type=refresh_token",{refresh_token:session.refresh_token});
+        const normalized = {
+          ...session,
+          ...next,
+          user: next.user || session.user,
+          refresh_token: next.refresh_token || session.refresh_token,
+          expires_at: Math.floor(Date.now()/1000) + (next.expires_in || 3600)
+        };
+        await saveSession(normalized);
+        return normalized;
+      } catch (error) {
+        const detail = String(error?.code || error?.message || "").toLowerCase();
+        const invalidRefreshToken = error?.status === 400 ||
+          /invalid_grant|invalid.*refresh|refresh.*(expired|invalid|not found)|refresh_token_not_found/.test(detail);
+        // Only discard a session when Supabase explicitly rejects its refresh token.
+        // Network failures, timeouts and temporary server errors must not sign users out.
+        if (invalidRefreshToken) await clearSession();
+        return null;
+      }
+    })();
     try {
-      const next = await authRequest("token?grant_type=refresh_token",{refresh_token:session.refresh_token});
-      const normalized = {...next,expires_at:Math.floor(Date.now()/1000)+(next.expires_in || 3600)};
-      await saveSession(normalized);
-      return normalized;
-    } catch { await clearSession(); return null; }
+      return await refreshPromise;
+    } finally {
+      refreshPromise = null;
+    }
   };
   const buildAuthForm = () => {
     const card = document.querySelector("#authGate .auth-card");
