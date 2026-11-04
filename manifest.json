@@ -1,15 +1,14 @@
 {
   "manifest_version": 3,
-  "name": "TryAIToday Flow Automator",
+  "name": "Flow Automator",
   "version": "1.6.4",
-  "description": "Automate bulk image & video generation on Google Flow — queue your prompts to create and auto-download them all in the background.",
+  "description": "Automate bulk image and video generation on Google Flow.",
   "permissions": [
     "sidePanel",
     "storage",
     "downloads",
     "tabs",
-    "scripting",
-    "identity"
+    "scripting"
   ],
   "host_permissions": [
     "https://labs.google/*",
@@ -28,7 +27,7 @@
     "service_worker": "background.js"
   },
   "action": {
-    "default_title": "TryAIToday Flow Automator",
+    "default_title": "Flow Automator",
     "default_icon": {
       "16": "icons/icon16.png",
       "32": "icons/icon32.png",
