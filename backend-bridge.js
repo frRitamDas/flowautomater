@@ -88,18 +88,6 @@
     if (!response.ok) throw new Error(data.message || data.error || "Unable to load account status");
     return data;
   };
-  try {
-    if (chrome.identity?.launchWebAuthFlow) chrome.identity.launchWebAuthFlow = async (details, callback) => {
-      const user = await getSupabaseUser();
-      if (!user) throw new Error("Sign in with your Supabase email and password first.");
-      const redirect = details?.redirectUrl || chrome.identity.getRedirectURL();
-      const fragment = new URLSearchParams({access_token:"supabase-session-identity",token_type:"Bearer",expires_in:"3600",state:new URL(details.url).searchParams.get("state") || ""});
-      const result = redirect + "#" + fragment.toString();
-      if (callback) { callback(result); return; }
-      return result;
-    };
-  } catch (error) { console.warn("[Flow Automator] OAuth compatibility shim unavailable", error); }
-
   const ORIGINAL_FETCH = window.fetch.bind(window);
   window.fetch = async (input, init = {}) => {
     const rawUrl = typeof input === "string" ? input : input?.url || "";
