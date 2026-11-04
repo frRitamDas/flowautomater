@@ -15,7 +15,8 @@
     "https://labs.google/*",
     "https://flow.google.com/*",
     "https://aisandbox-pa.googleapis.com/*",
-    "https://www.googleapis.com/*"
+    "https://www.googleapis.com/*",
+    "https://lejfarzqdywdaqvbfcaj.supabase.co/*"
   ],
   "icons": {
     "16": "icons/icon16.png",
